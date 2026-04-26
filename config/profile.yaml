@@ -1,0 +1,117 @@
+profile:
+  name: Gaurang Jagtap
+  email_recipient: gaurangjagtap2001@gmail.com
+  github: https://github.com/Gaurang58
+
+search:
+  countries:
+    - gb
+  results_per_query: 40
+  max_email_jobs: 25
+  reed_locations:
+    - London
+    - Manchester
+    - Birmingham
+    - Leeds
+    - Bristol
+  rss_feeds:
+    - https://stackoverflow.blog/jobs/feed/
+    - https://weworkremotely.com/categories/remote-programming-jobs.rss
+    - https://www.remotive.com/remote-jobs/software-dev/rss
+    - https://jobicy.com/?feed=job_feed&job_categories=devops-sysadmin,software-development
+    - https://jobicy.com/?feed=job_feed&job_categories=product-dev
+
+roles:
+  target:
+    - Software Engineer
+    - Junior Software Engineer
+    - DevOps Engineer
+    - Junior DevOps Engineer
+    - Node.js Engineer
+    - React Developer
+    - MERN Stack Developer
+    - Junior Cloud Engineer
+    - Cloud Engineer
+    - Site Reliability Engineer
+    - Junior Site Reliability Engineer
+    - Junior JavaScript Engineer
+  excluded:
+    - Sales
+    - Senior
+    - Principal
+    - Unpaid
+    - Internship
+    - Intern
+    - Lead
+    - Manager
+    - Director
+
+salary:
+  min: 25000
+  max: 45000
+  currencies:
+    - GBP
+    - EUR
+
+visa:
+  sponsorship_required: true
+  positive_terms:
+    - visa sponsorship
+    - skilled worker visa
+    - certificate of sponsorship
+    - sponsorship available
+    - sponsor licence
+    - relocation support
+    - work permit sponsorship
+  negative_terms:
+    - no visa sponsorship
+    - unable to sponsor
+    - cannot sponsor
+    - must have right to work
+    - must already have the right to work
+    - sponsorship is not available
+
+skills:
+  high_priority:
+    - JavaScript
+    - Node.js
+    - React
+    - REST API
+    - REST APIs
+    - Docker
+    - Kubernetes
+    - Azure
+    - AWS
+    - CI/CD
+    - GitHub Actions
+    - GitLab CI/CD
+    - Terraform
+    - SQL
+  medium_priority:
+    - Microservices
+    - NoSQL
+    - Helm
+    - Grafana
+    - Linux
+    - Agile
+    - Automated testing
+    - TDD
+    - SOLID
+    - Power BI
+    - Monitoring
+    - Infrastructure as Code
+    - System design
+
+queries:
+  - junior software engineer
+  - software engineer
+  - junior devops engineer
+  - devops engineer
+  - junior cloud engineer
+  - cloud engineer
+  - site reliability engineer
+  - node.js developer
+  - react developer
+  - full stack developer
+  - mern stack developer
+  - javascript developer
