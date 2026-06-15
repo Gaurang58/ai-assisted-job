@@ -5,7 +5,9 @@ roles in the United Kingdom, Germany, the Netherlands and Ireland.
 
 ## Architecture
 
-- `src/providers/`: Adzuna (`gb`, `de`, `nl`, `ie`), Reed (`gb` only), RSS and Arbeitnow adapters.
+- `src/providers/`: Adzuna (`gb`, `de`, `nl`), Reed (`gb` only), RSS,
+  Arbeitnow and Jobicy country-filtered remote-job adapters. Jobicy supplies
+  additional Ireland, Netherlands and Germany coverage without a new secret.
 - `src/normalization.py`: country, city, remote and local-salary normalization.
 - `src/eligibility/`: one evidence checker per Phase One country.
 - `src/scoring.py` and `src/dedupe.py`: configurable relevance scoring and two-stage deduplication.

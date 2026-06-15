@@ -7,13 +7,25 @@ from collections import Counter
 
 from src.config import AppConfig
 from src.models import Job
-from src.providers import AdzunaProvider, ArbeitnowProvider, ReedProvider, RssProvider
+from src.providers import (
+    AdzunaProvider,
+    ArbeitnowProvider,
+    JobicyProvider,
+    ReedProvider,
+    RssProvider,
+)
 from src.providers.adzuna import normalize_adzuna_job
 from src.providers.reed import normalize_reed_job
 from src.providers.rss import normalize_rss_job
 
 LOGGER = logging.getLogger(__name__)
-DEFAULT_PROVIDERS = (AdzunaProvider, ReedProvider, RssProvider, ArbeitnowProvider)
+DEFAULT_PROVIDERS = (
+    AdzunaProvider,
+    ReedProvider,
+    RssProvider,
+    ArbeitnowProvider,
+    JobicyProvider,
+)
 
 
 def fetch_jobs(config: AppConfig, providers=None) -> list[Job]:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.main import make_batch_id, run
+from src.main import make_batch_id, run, select_balanced_jobs
 from src.notifier import render_html_report, send_email
 
 
@@ -118,11 +118,11 @@ def test_email_groups_each_country_once(job_factory):
         job_factory(country_code="nl", country_name="Netherlands", external_id="nl-1"),
     ]
     html = render_html_report(jobs, {"profile": {"name": "Gaurang"}}, "batch-1")
-    assert html.count(">Germany</td>") == 1
-    assert html.count(">United Kingdom</td>") == 1
-    assert html.count(">Netherlands</td>") == 1
-    assert html.index(">United Kingdom</td>") < html.index(">Germany</td>")
-    assert html.index(">Germany</td>") < html.index(">Netherlands</td>")
+    assert html.count('data-country-section="de"') == 1
+    assert html.count('data-country-section="gb"') == 1
+    assert html.count('data-country-section="nl"') == 1
+    assert html.index('data-country-section="gb"') < html.index('data-country-section="de"')
+    assert html.index('data-country-section="de"') < html.index('data-country-section="nl"')
 
 
 def test_email_uses_aligned_email_safe_layout(job_factory):
@@ -131,8 +131,53 @@ def test_email_uses_aligned_email_safe_layout(job_factory):
         {"profile": {"name": "Gaurang"}},
         "batch-1",
     )
-    assert 'width="680"' in html
+    assert 'width="760"' in html
     assert 'role="presentation"' in html
-    assert "View job and apply" in html
-    assert "Match score" in html
+    assert "Open job" in html
+    assert "SALARY / SOURCE" in html
     assert "88/100" in html
+
+
+def test_email_selection_is_country_balanced(job_factory):
+    jobs = []
+    for country in ("gb", "de", "nl", "ie"):
+        for index in range(8):
+            jobs.append(
+                job_factory(
+                    country_code=country,
+                    country_name=country,
+                    external_id=f"{country}-{index}",
+                    overall_score=100 - index,
+                )
+            )
+    selected = select_balanced_jobs(
+        jobs,
+        {
+            "max_email_jobs": 20,
+            "email_country_limits": {"gb": 5, "de": 6, "nl": 6, "ie": 6, "unknown": 1},
+        },
+    )
+    counts = {
+        country: sum(job.country_code == country for job in selected)
+        for country in ("gb", "de", "nl", "ie")
+    }
+    assert counts == {"gb": 5, "de": 5, "nl": 5, "ie": 5}
+
+
+def test_email_selection_caps_uk_when_other_countries_are_available(job_factory):
+    jobs = [
+        job_factory(country_code="gb", external_id=f"gb-{index}")
+        for index in range(20)
+    ] + [
+        job_factory(country_code="de", external_id=f"de-{index}")
+        for index in range(8)
+    ]
+    selected = select_balanced_jobs(
+        jobs,
+        {
+            "max_email_jobs": 12,
+            "email_country_limits": {"gb": 4, "de": 8, "nl": 6, "ie": 6, "unknown": 1},
+        },
+    )
+    assert sum(job.country_code == "gb" for job in selected) == 4
+    assert sum(job.country_code == "de" for job in selected) == 8

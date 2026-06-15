@@ -1,6 +1,7 @@
 from src.normalization import normalize_location, normalize_salary
 from src.providers.adzuna import AdzunaProvider, normalize_adzuna_job
 from src.providers.arbeitnow import normalize_arbeitnow_job
+from src.providers.jobicy import JobicyProvider, normalize_jobicy_job
 from src.providers.rss import normalize_rss_job
 
 
@@ -66,6 +67,57 @@ def test_arbeitnow_does_not_assume_germany():
     assert job.country_code == "ie"
 
 
+def test_jobicy_maps_filtered_country_and_preserves_source_link():
+    job = normalize_jobicy_job(
+        {
+            "id": 99,
+            "url": "https://jobicy.com/jobs/99",
+            "jobTitle": "Software Engineer",
+            "companyName": "Remote Co",
+            "jobGeo": "Europe",
+            "jobDescription": "<p>Build Node.js APIs</p>",
+            "pubDate": "2026-06-15T08:00:00+00:00",
+            "salaryMin": 4000,
+            "salaryMax": 5000,
+            "salaryCurrency": "EUR",
+            "salaryPeriod": "monthly",
+        },
+        "ie",
+    )
+    assert job.country_code == "ie"
+    assert job.remote_type == "remote_country_restricted"
+    assert job.url == "https://jobicy.com/jobs/99"
+    assert job.annual_salary_min_local == 48000
+
+
+class JobicyResponse:
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return {"jobs": []}
+
+
+class JobicySession:
+    def __init__(self):
+        self.urls = []
+
+    def get(self, url, **kwargs):
+        self.urls.append((url, kwargs["params"]))
+        return JobicyResponse()
+
+
+def test_jobicy_queries_ireland_first(config):
+    session = JobicySession()
+    config.data["providers"]["jobicy"]["industries"] = ["engineering"]
+    JobicyProvider(session).fetch(config)
+    assert [params["geo"] for _, params in session.urls] == [
+        "ireland",
+        "netherlands",
+        "germany",
+    ]
+
+
 class FakeResponse:
     def raise_for_status(self):
         return None
@@ -83,11 +135,11 @@ class FakeSession:
         return FakeResponse()
 
 
-def test_adzuna_http_adapter_queries_all_phase_one_countries(config, monkeypatch):
+def test_adzuna_http_adapter_queries_supported_countries(config, monkeypatch):
     monkeypatch.setenv("ADZUNA_APP_ID", "id")
     monkeypatch.setenv("ADZUNA_APP_KEY", "key")
     config.data["queries"] = ["software engineer"]
     config.data["providers"]["adzuna"]["request_delay_seconds"] = 0
     session = FakeSession()
     AdzunaProvider(session).fetch(config)
-    assert {url.split("/jobs/")[1].split("/")[0] for url in session.urls} == {"gb", "de", "nl", "ie"}
+    assert {url.split("/jobs/")[1].split("/")[0] for url in session.urls} == {"gb", "de", "nl"}
