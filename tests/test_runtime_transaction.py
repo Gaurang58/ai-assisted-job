@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from src.main import make_batch_id, run
-from src.notifier import send_email
+from src.notifier import render_html_report, send_email
 
 
 class OneJobProvider:
@@ -108,3 +108,31 @@ def test_dry_run_has_no_store_writes(job_factory):
     store = RecordingStore()
     run(providers=[OneJobProvider(job_factory())], store=store, dry_run=True)
     assert store.calls == []
+
+
+def test_email_groups_each_country_once(job_factory):
+    jobs = [
+        job_factory(country_code="de", country_name="Germany", external_id="de-1"),
+        job_factory(country_code="gb", country_name="United Kingdom", external_id="gb-1"),
+        job_factory(country_code="de", country_name="Germany", external_id="de-2"),
+        job_factory(country_code="nl", country_name="Netherlands", external_id="nl-1"),
+    ]
+    html = render_html_report(jobs, {"profile": {"name": "Gaurang"}}, "batch-1")
+    assert html.count(">Germany</td>") == 1
+    assert html.count(">United Kingdom</td>") == 1
+    assert html.count(">Netherlands</td>") == 1
+    assert html.index(">United Kingdom</td>") < html.index(">Germany</td>")
+    assert html.index(">Germany</td>") < html.index(">Netherlands</td>")
+
+
+def test_email_uses_aligned_email_safe_layout(job_factory):
+    html = render_html_report(
+        [job_factory(work_authorisation_result="possible", match_score=88)],
+        {"profile": {"name": "Gaurang"}},
+        "batch-1",
+    )
+    assert 'width="680"' in html
+    assert 'role="presentation"' in html
+    assert "View job and apply" in html
+    assert "Match score" in html
+    assert "88/100" in html
