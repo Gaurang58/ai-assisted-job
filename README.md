@@ -1,67 +1,89 @@
 # AI-assisted Job Search
 
-A reliable MVP job-search automation for Software Engineering, DevOps, Cloud, React, Node.js, and SRE roles.
+Phase One searches and ranks software, DevOps, cloud, frontend, full-stack and SRE
+roles in the United Kingdom, Germany, the Netherlands and Ireland.
 
-## What it does
+## Architecture
 
-1. Fetches jobs from Adzuna.
-2. Normalizes job data.
-3. Removes duplicates.
-4. Scores jobs against your profile.
-5. Checks visa sponsorship wording.
-6. Saves seen jobs in SQLite.
-7. Emails a ranked HTML report.
-8. Can run daily with GitHub Actions.
+- `src/providers/`: Adzuna (`gb`, `de`, `nl`, `ie`), Reed (`gb` only), RSS and Arbeitnow adapters.
+- `src/normalization.py`: country, city, remote and local-salary normalization.
+- `src/eligibility/`: one evidence checker per Phase One country.
+- `src/scoring.py` and `src/dedupe.py`: configurable relevance scoring and two-stage deduplication.
+- `src/storage/`: SQLite for local state and Google Sheets for durable Actions state/tracking.
+- `src/main.py`: fetch → normalize → dedupe → enrich → rank → persist → email transaction.
 
-## Setup locally
+Register presence is employer-level evidence only. The project does not call a
+vacancy a confirmed sponsor and does not provide legal advice or guarantee a visa outcome.
+
+## Local setup
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Mac/Linux
-# .venv\Scripts\activate   # Windows PowerShell
-pip install -r requirements.txt
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Edit `.env`:
+Configure `config/profile.yaml` for roles, skills, countries and salary preferences.
+Immigration reference data and effective dates live in `config/eligibility_rules.yaml`.
 
-```env
-ADZUNA_APP_ID=your_adzuna_app_id
-ADZUNA_APP_KEY=your_adzuna_app_key
-EMAIL_USER=gaurangjagtap2001@gmail.com
-EMAIL_PASS=your_gmail_app_password
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-```
-
-Run:
+Run without external writes:
 
 ```bash
-python -m src.main
+python -m src.main --dry-run
 ```
 
-Open the generated report:
+Other modes:
 
-```text
-exports/latest_report.html
+```bash
+python -m src.main             # email + Google Sheets + local SQLite
+python -m src.main --no-email  # state/Sheets processing, no SMTP or tracker insertion
+python -m src.main --no-sheets # email + local SQLite only
+pytest -q
 ```
 
-## GitHub Actions setup
+The generated local report is `exports/latest_report.html`.
 
-Add these repository secrets:
+## Environment variables
 
-- `ADZUNA_APP_ID`
-- `ADZUNA_APP_KEY`
-- `EMAIL_USER`
-- `EMAIL_PASS`
+- `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`
+- `REED_API_KEY` (optional)
+- `EMAIL_USER`, `EMAIL_PASS`, `EMAIL_RECIPIENT`
+- `SMTP_HOST`, `SMTP_PORT` (optional; Gmail defaults are used)
+- `GOOGLE_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`
 
-The workflow runs every day at 07:00 UTC and can also be started manually from the GitHub Actions tab.
+`GOOGLE_SERVICE_ACCOUNT_JSON` must contain the complete JSON document as one
+environment variable or GitHub secret. It is parsed in memory and never logged.
 
-## Next improvements
+## Google Sheets setup
 
-- Add Reed API.
-- Add company career pages.
-- Add stronger sponsorship validation.
-- Add application tracker UI.
-- Add AI-generated job summaries.
-- Add CV and cover-letter tailoring.
+1. Create a Google Cloud project and enable the Google Sheets API.
+2. Create a service account and JSON key.
+3. Create a spreadsheet and copy its ID from the URL.
+4. Share the spreadsheet with the service-account `client_email` as an editor.
+5. Add `GOOGLE_SHEET_ID` and the complete JSON key as `GOOGLE_SERVICE_ACCOUNT_JSON`.
+
+The application creates `Jobs Tracker`, `Bot State` and `Email Log` when absent.
+For an existing formatted tracker, keep the exact documented headers. Automated
+upserts update bot-managed columns and preserve non-empty user-editable columns.
+
+## GitHub Actions
+
+Add all environment variables above as repository secrets, including the optional
+Reed key if Reed should run. The workflow runs tests before the scheduled/manual
+search, uses pip caching, prevents overlapping runs and treats Sheets as durable state.
+
+## Migration from the UK-only version
+
+The first local run migrates the existing SQLite `jobs` table in place. The committed
+sponsor-register cache has been removed; registers are cached as generated runtime data.
+Move any personal email from old `config/profile.yaml` copies into `EMAIL_RECIPIENT`.
+Create and share the Google Sheet before running the default command in Actions.
+
+## Troubleshooting
+
+- `configuration error`: check YAML structure and Phase One country codes.
+- Google authentication errors: confirm the JSON secret is complete and the sheet is shared.
+- No Adzuna results: confirm both Adzuna credentials; other providers continue independently.
+- SMTP failure: the batch is marked failed, jobs remain unemailed, and a retry is safe.
+- Missing registry: eligibility degrades to vacancy evidence instead of terminating the run.

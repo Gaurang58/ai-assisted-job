@@ -1,136 +1,100 @@
+from __future__ import annotations
+
 import hashlib
 import re
-from typing import Dict, List
+from urllib.parse import urlsplit, urlunsplit
 
-
-RECRUITER_WORDS = {
-    "recruitment",
-    "recruiter",
-    "search",
-    "selection",
-    "staffing",
-    "talent",
-    "resourcing",
-    "consulting",
-    "consultancy",
-    "associates",
-    "resource",
-    "resources",
-    "agency",
-}
+from src.models import Job
+from src.sponsorship import is_recruiter_company
 
 
 def clean_text(value: str) -> str:
-    value = (value or "").lower()
-    value = re.sub(r"[^a-z0-9]+", " ", value)
-    return re.sub(r"\s+", " ", value).strip()
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", (value or "").lower())).strip()
 
 
-def normalize_company(value: str) -> str:
-    text = clean_text(value)
-    parts = [p for p in text.split() if p not in RECRUITER_WORDS]
-    return " ".join(parts).strip() or text
+def canonical_url(value: str) -> str:
+    if not value:
+        return ""
+    parts = urlsplit(value)
+    return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip("/"), "", ""))
 
 
 def normalize_title(value: str) -> str:
     text = clean_text(value)
-
-    replacements = {
+    for old, new in {
         "node js": "nodejs",
-        "node js developer": "nodejs developer",
         "front end": "frontend",
         "full stack": "fullstack",
         "dev ops": "devops",
         "site reliability engineer": "sre",
         "software developer": "software engineer",
-    }
-
-    for old, new in replacements.items():
+    }.items():
         text = text.replace(old, new)
-
-    # remove noisy location/salary fragments from titles
-    text = re.sub(r"\b(london|manchester|birmingham|sheffield|uk|hybrid|remote)\b", " ", text)
-    text = re.sub(r"\b\d{2,3}k\b", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
-def salary_bucket(job: Dict) -> str:
-    low = job.get("salary_min")
-    high = job.get("salary_max")
-    if low is None and high is None:
-        return "none"
-
-    low = int(low or high or 0)
-    high = int(high or low or 0)
-    return f"{low//5000}-{high//5000}"
+def normalize_company(value: str) -> str:
+    words = clean_text(value).split()
+    suffixes = {"ltd", "limited", "plc", "llc", "inc", "gmbh", "bv"}
+    return " ".join(word for word in words if word not in suffixes)
 
 
-def make_job_id(job: Dict) -> str:
-    if job.get("external_id"):
-        raw = f"{job.get('source')}|{job.get('external_id')}"
+def make_job_id(job: Job) -> str:
+    if job.external_id:
+        raw = f"{job.source}|{job.external_id}"
     else:
         raw = "|".join(
             [
-                normalize_title(job.get("title", "")),
-                normalize_company(job.get("company", "")),
-                clean_text(job.get("location", "")),
+                normalize_title(job.title),
+                normalize_company(job.company),
+                job.country_code or "",
+                clean_text(job.city or ""),
+                canonical_url(job.url),
             ]
         )
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha256(raw.encode()).hexdigest()[:20]
 
 
-def make_soft_key(job: Dict) -> str:
+def exact_dedupe(jobs: list[Job]) -> list[Job]:
+    seen: set[str] = set()
+    unique: list[Job] = []
+    for job in jobs:
+        job.job_id = make_job_id(job)
+        if job.job_id in seen:
+            continue
+        seen.add(job.job_id)
+        unique.append(job)
+    return unique
+
+
+def soft_key(job: Job) -> str:
+    place = clean_text(job.city or job.remote_type)
     return "|".join(
-        [
-            normalize_title(job.get("title", "")),
-            normalize_company(job.get("company", "")),
-            salary_bucket(job),
-        ]
+        [normalize_title(job.title), normalize_company(job.company), job.country_code or "", place]
     )
 
 
-def is_better_job(candidate: Dict, existing: Dict) -> bool:
-    candidate_score = candidate.get("score", 0)
-    existing_score = existing.get("score", 0)
-
-    if candidate_score != existing_score:
-        return candidate_score > existing_score
-
-    candidate_sponsorship = candidate.get("sponsorship_status", "UNKNOWN")
-    existing_sponsorship = existing.get("sponsorship_status", "UNKNOWN")
-    order = {"CONFIRMED": 3, "LIKELY": 2, "UNKNOWN": 1, "NO": 0}
-    if order.get(candidate_sponsorship, 0) != order.get(existing_sponsorship, 0):
-        return order.get(candidate_sponsorship, 0) > order.get(existing_sponsorship, 0)
-
-    candidate_has_url = bool(candidate.get("url"))
-    existing_has_url = bool(existing.get("url"))
-    return candidate_has_url and not existing_has_url
+def _quality(job: Job) -> tuple:
+    direct = int(job.source not in {"adzuna", "reed"} and not is_recruiter_company(job.company))
+    explicit = int(job.vacancy_authorisation_signal == "explicit_positive")
+    created = job.created_at.timestamp() if job.created_at else 0
+    return direct, len(job.description), int(bool(job.url)), explicit, created, job.overall_score
 
 
-def dedupe_jobs(jobs: List[Dict]) -> List[Dict]:
-    exact_seen = set()
-    unique: List[Dict] = []
-    soft_index: Dict[str, int] = {}
-
+def cross_source_dedupe(jobs: list[Job]) -> list[Job]:
+    chosen: dict[str, Job] = {}
     for job in jobs:
-        job_id = make_job_id(job)
-
-        if job_id in exact_seen:
+        key = soft_key(job)
+        existing = chosen.get(key)
+        if existing is None:
+            chosen[key] = job
             continue
+        winner, loser = (job, existing) if _quality(job) > _quality(existing) else (existing, job)
+        urls = list(dict.fromkeys(winner.alternate_urls + loser.alternate_urls + [loser.url]))
+        winner.alternate_urls = [url for url in urls if url and url != winner.url]
+        chosen[key] = winner
+    return list(chosen.values())
 
-        exact_seen.add(job_id)
-        job["job_id"] = job_id
 
-        soft_key = make_soft_key(job)
-        if soft_key in soft_index:
-            existing_idx = soft_index[soft_key]
-            existing_job = unique[existing_idx]
-            if is_better_job(job, existing_job):
-                unique[existing_idx] = job
-            continue
-
-        soft_index[soft_key] = len(unique)
-        unique.append(job)
-
-    return unique
+def dedupe_jobs(jobs: list[Job]) -> list[Job]:
+    return exact_dedupe(jobs)
