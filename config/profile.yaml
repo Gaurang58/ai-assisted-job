@@ -6,22 +6,25 @@ profile:
 search:
   countries: [gb, de, nl, ie]
   results_per_query: 40
-  max_email_jobs: 25
+  max_email_jobs: 20
   max_job_age_days: 14
   minimum_match_score: 45
   minimum_overall_score: 45
+  email_country_limits:
+    gb: 5
+    de: 6
+    nl: 6
+    ie: 6
+    unknown: 1
   reed_locations: [London, Manchester, Birmingham, Leeds, Bristol]
   rss_feeds:
     - https://stackoverflow.blog/jobs/feed/
     - https://weworkremotely.com/categories/remote-programming-jobs.rss
-    - https://www.remotive.com/remote-jobs/software-dev/rss
-    - https://jobicy.com/?feed=job_feed&job_categories=devops-sysadmin,software-development
-    - https://jobicy.com/?feed=job_feed&job_categories=product-dev
 
 providers:
   adzuna:
     enabled: true
-    countries: [gb, de, nl, ie]
+    countries: [gb, de, nl]
     request_delay_seconds: 0.2
   reed:
     enabled: true
@@ -30,6 +33,12 @@ providers:
     enabled: true
   arbeitnow:
     enabled: true
+  jobicy:
+    enabled: true
+    countries: [ie, nl, de]
+    industries: [engineering, dev]
+    results_per_request: 100
+    excluded_levels: [senior, director, executive]
 
 roles:
   canonical:
@@ -39,6 +48,8 @@ roles:
         - software developer
         - junior software engineer
         - graduate software engineer
+        - backend engineer
+        - backend developer
         - softwareentwickler
         - junior softwareentwickler
     devops_engineer:
@@ -56,6 +67,8 @@ roles:
       positive_titles: [site reliability engineer, sre]
   excluded_titles:
     - senior
+    - sr
+    - sr.
     - principal
     - lead
     - manager

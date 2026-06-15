@@ -19,12 +19,49 @@ from src.scoring import rank_jobs
 from src.storage import CompositeStore, EmailBatch, GoogleSheetsStore, SQLiteStore
 
 LOGGER = logging.getLogger(__name__)
+EMAIL_COUNTRY_ORDER = ("ie", "nl", "de", "gb", "unknown")
 
 
 def make_batch_id(jobs, recipient: str, run_date: str | None = None) -> str:
     run_date = run_date or datetime.now(timezone.utc).date().isoformat()
     value = "|".join(sorted(job.job_id or "" for job in jobs)) + "|" + recipient + "|" + run_date
     return "jobs-" + hashlib.sha256(value.encode()).hexdigest()[:16]
+
+
+def select_balanced_jobs(jobs, search_config: dict) -> list:
+    maximum = int(search_config.get("max_email_jobs", 20))
+    limits = search_config.get("email_country_limits", {})
+    buckets = {
+        code: [
+            job
+            for job in jobs
+            if (job.country_code if job.country_code in {"gb", "de", "nl", "ie"} else "unknown")
+            == code
+        ]
+        for code in EMAIL_COUNTRY_ORDER
+    }
+    selected = []
+    positions = {code: 0 for code in EMAIL_COUNTRY_ORDER}
+    while len(selected) < maximum:
+        added = False
+        for code in EMAIL_COUNTRY_ORDER:
+            if len(selected) >= maximum:
+                break
+            country_limit = int(limits.get(code, maximum))
+            already_selected = sum(
+                1
+                for job in selected
+                if (job.country_code if job.country_code in {"gb", "de", "nl", "ie"} else "unknown")
+                == code
+            )
+            if already_selected >= country_limit or positions[code] >= len(buckets[code]):
+                continue
+            selected.append(buckets[code][positions[code]])
+            positions[code] += 1
+            added = True
+        if not added:
+            break
+    return selected
 
 
 def _build_store(config, *, dry_run: bool, no_sheets: bool, sqlite_path=None):
@@ -87,7 +124,7 @@ def run(
         or not existing[job.job_id].get("emailed_at")
         or job.overall_score >= int(existing[job.job_id].get("score") or 0) + 15
     ]
-    selected = new_jobs[: int(config.data["search"].get("max_email_jobs", 25))]
+    selected = select_balanced_jobs(new_jobs, config.data["search"])
     batch = EmailBatch(
         make_batch_id(selected, recipient, started.date().isoformat()), started, selected, recipient
     )
@@ -122,6 +159,7 @@ def run(
         "within_age": len(current),
         "ranked": len(ranked), "selected": len(selected),
         "providers": count_by_provider(raw), "countries": count_by_country(raw),
+        "selected_countries": count_by_country(selected),
         "report": str(report_path), "elapsed_seconds": round(time.monotonic() - started_clock, 2),
     }
     LOGGER.info("run_summary=%s", summary)
@@ -131,6 +169,7 @@ def run(
     )
     print(f"By provider: {summary['providers']}")
     print(f"By country: {summary['countries']}")
+    print(f"Email selected by country: {summary['selected_countries']}")
     print(f"Report saved to: {report_path}")
     return summary
 

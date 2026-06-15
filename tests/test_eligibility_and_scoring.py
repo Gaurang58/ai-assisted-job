@@ -58,6 +58,13 @@ def test_german_title_alias(config, job_factory):
     assert job.match_score > 0
 
 
+def test_backend_engineer_alias(config, job_factory):
+    job = engine(config).enrich(job_factory(title="Backend Engineer (Node.js)"))
+    score_job(job, config)
+    assert job.canonical_role == "software_engineer"
+    assert job.match_score >= config.data["search"]["minimum_match_score"]
+
+
 def test_role_exclusions_come_from_config(config, job_factory):
     job = engine(config).enrich(job_factory(title="Senior Software Engineer"))
     score_job(job, config)

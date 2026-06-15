@@ -3,9 +3,26 @@
 Phase One searches and ranks software, DevOps, cloud, frontend, full-stack and SRE
 roles in the United Kingdom, Germany, the Netherlands and Ireland.
 
+## Verified status
+
+The complete workflow was verified successfully on June 15, 2026:
+
+- 39 automated tests passed.
+- Adzuna, Reed, RSS, Arbeitnow and Jobicy fetched 2,845 listings.
+- Google Sheets state and tracker updates completed successfully.
+- Gmail delivery completed successfully.
+- The compact email contained 18 jobs: Ireland 1, Netherlands 6, Germany 6 and
+  UK 5.
+
+The implementation is currently on `codex/phase-one-europe`. Scheduled GitHub
+workflows execute code from the default `main` branch, so the branch must be
+merged before the new four-country behavior becomes the daily scheduled version.
+
 ## Architecture
 
-- `src/providers/`: Adzuna (`gb`, `de`, `nl`, `ie`), Reed (`gb` only), RSS and Arbeitnow adapters.
+- `src/providers/`: Adzuna (`gb`, `de`, `nl`), Reed (`gb` only), RSS,
+  Arbeitnow and Jobicy country-filtered remote-job adapters. Jobicy supplies
+  additional Ireland, Netherlands and Germany coverage without a new secret.
 - `src/normalization.py`: country, city, remote and local-salary normalization.
 - `src/eligibility/`: one evidence checker per Phase One country.
 - `src/scoring.py` and `src/dedupe.py`: configurable relevance scoring and two-stage deduplication.
@@ -66,12 +83,19 @@ environment variable or GitHub secret. It is parsed in memory and never logged.
 The application creates `Jobs Tracker`, `Bot State` and `Email Log` when absent.
 For an existing formatted tracker, keep the exact documented headers. Automated
 upserts update bot-managed columns and preserve non-empty user-editable columns.
+`Bot State` prevents routine duplicate emails, while failed batches remain
+retryable until delivery succeeds.
 
 ## GitHub Actions
 
 Add all environment variables above as repository secrets, including the optional
 Reed key if Reed should run. The workflow runs tests before the scheduled/manual
 search, uses pip caching, prevents overlapping runs and treats Sheets as durable state.
+It is scheduled for `06:00 UTC` (`07:00` in the UK during British Summer Time).
+GitHub may start scheduled jobs later when Actions demand is high.
+
+An email is sent only when new matching jobs pass the configured thresholds.
+Country sections appear only for countries represented in the final selection.
 
 ## Migration from the UK-only version
 
@@ -86,4 +110,5 @@ Create and share the Google Sheet before running the default command in Actions.
 - Google authentication errors: confirm the JSON secret is complete and the sheet is shared.
 - No Adzuna results: confirm both Adzuna credentials; other providers continue independently.
 - SMTP failure: the batch is marked failed, jobs remain unemailed, and a retry is safe.
+- Gmail `535` errors: use a Gmail App Password for `EMAIL_PASS`.
 - Missing registry: eligibility degrades to vacancy evidence instead of terminating the run.

@@ -61,6 +61,10 @@ def exact_dedupe(jobs: list[Job]) -> list[Job]:
     for job in jobs:
         job.job_id = make_job_id(job)
         if job.job_id in seen:
+            existing = next(item for item in unique if item.job_id == job.job_id)
+            existing.remote_countries = list(
+                dict.fromkeys(existing.remote_countries + job.remote_countries)
+            )
             continue
         seen.add(job.job_id)
         unique.append(job)
