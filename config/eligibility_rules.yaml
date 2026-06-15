@@ -1,0 +1,62 @@
+effective_dates:
+  uk: "2026-01-01"
+  de: "2026-01-01"
+  nl: "2026-01-01"
+  ie: "2026-01-01"
+
+# Reference data only. The application reports evidence confidence and does not
+# make a legal eligibility determination from these values.
+salary_thresholds:
+  de:
+    period: annual
+    eu_blue_card_general_eur: 50700
+    eu_blue_card_shortage_or_new_entrant_eur: 45934.20
+    source: https://www.make-it-in-germany.com/en/visa-residence/types/eu-blue-card
+  nl:
+    period: monthly
+    highly_skilled_migrant_reduced_eur: 3122
+    highly_skilled_migrant_under_30_eur: 4357
+    highly_skilled_migrant_30_or_older_eur: 5942
+    eu_blue_card_eur: 5942
+    eu_blue_card_reduced_eur: 4754
+    source: https://ind.nl/en/required-amounts-income-requirements
+  ie:
+    period: annual
+    critical_skills_list_eur: 40904
+    recent_graduate_critical_skills_eur: 36848
+    all_occupations_high_salary_eur: 68911
+    source: https://enterprise.gov.ie/en/what-we-do/workplace-and-skills/employment-permits/permit-types/critical-skills-employment-permit/
+
+ireland_critical_skills_occupations:
+  - software engineer
+  - software developer
+  - devops engineer
+  - cloud engineer
+  - site reliability engineer
+  - frontend engineer
+  - fullstack engineer
+
+positive_terms:
+  - visa sponsorship available
+  - work permit support
+  - relocation and visa support
+  - international candidates welcome
+  - eu blue card
+  - highly skilled migrant
+  - critical skills employment permit
+  - skilled worker visa
+  - certificate of sponsorship
+  - sponsorship available
+  - visa support
+
+negative_terms:
+  - no sponsorship
+  - unable to sponsor
+  - cannot sponsor
+  - must already have the right to work
+  - existing work authorisation required
+  - existing work authorization required
+  - eu work permit required
+  - applicants must be eligible to work without sponsorship
+  - no visa sponsorship
+  - sponsorship is not available

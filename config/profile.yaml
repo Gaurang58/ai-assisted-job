@@ -1,19 +1,16 @@
 profile:
   name: Gaurang Jagtap
-  email_recipient: gaurangjagtap2001@gmail.com
+  email_recipient_env: EMAIL_RECIPIENT
   github: https://github.com/Gaurang58
 
 search:
-  countries:
-    - gb
+  countries: [gb, de, nl, ie]
   results_per_query: 40
   max_email_jobs: 25
-  reed_locations:
-    - London
-    - Manchester
-    - Birmingham
-    - Leeds
-    - Bristol
+  max_job_age_days: 14
+  minimum_match_score: 45
+  minimum_overall_score: 45
+  reed_locations: [London, Manchester, Birmingham, Leeds, Bristol]
   rss_feeds:
     - https://stackoverflow.blog/jobs/feed/
     - https://weworkremotely.com/categories/remote-programming-jobs.rss
@@ -21,55 +18,54 @@ search:
     - https://jobicy.com/?feed=job_feed&job_categories=devops-sysadmin,software-development
     - https://jobicy.com/?feed=job_feed&job_categories=product-dev
 
+providers:
+  adzuna:
+    enabled: true
+    countries: [gb, de, nl, ie]
+    request_delay_seconds: 0.2
+  reed:
+    enabled: true
+    countries: [gb]
+  rss:
+    enabled: true
+  arbeitnow:
+    enabled: true
+
 roles:
-  target:
-    - Software Engineer
-    - Junior Software Engineer
-    - DevOps Engineer
-    - Junior DevOps Engineer
-    - Node.js Engineer
-    - React Developer
-    - MERN Stack Developer
-    - Junior Cloud Engineer
-    - Cloud Engineer
-    - Site Reliability Engineer
-    - Junior Site Reliability Engineer
-    - Junior JavaScript Engineer
-  excluded:
-    - Sales
-    - Senior
-    - Principal
-    - Unpaid
-    - Internship
-    - Intern
-    - Lead
-    - Manager
-    - Director
-
-salary:
-  min: 25000
-  max: 45000
-  currencies:
-    - GBP
-    - EUR
-
-visa:
-  sponsorship_required: true
-  positive_terms:
-    - visa sponsorship
-    - skilled worker visa
-    - certificate of sponsorship
-    - sponsorship available
-    - sponsor licence
-    - relocation support
-    - work permit sponsorship
-  negative_terms:
-    - no visa sponsorship
-    - unable to sponsor
-    - cannot sponsor
-    - must have right to work
-    - must already have the right to work
-    - sponsorship is not available
+  canonical:
+    software_engineer:
+      positive_titles:
+        - software engineer
+        - software developer
+        - junior software engineer
+        - graduate software engineer
+        - softwareentwickler
+        - junior softwareentwickler
+    devops_engineer:
+      positive_titles:
+        - devops engineer
+        - junior devops engineer
+        - devops-ingenieur
+    cloud_engineer:
+      positive_titles: [cloud engineer, junior cloud engineer]
+    frontend_engineer:
+      positive_titles: [react developer, frontend developer, front end developer]
+    fullstack_engineer:
+      positive_titles: [full stack developer, fullstack developer, mern stack developer]
+    sre:
+      positive_titles: [site reliability engineer, sre]
+  excluded_titles:
+    - senior
+    - principal
+    - lead
+    - manager
+    - director
+    - staff
+    - staff engineer
+    - architect
+    - unpaid
+    - internship
+    - intern
 
 skills:
   high_priority:
@@ -77,14 +73,11 @@ skills:
     - Node.js
     - React
     - REST API
-    - REST APIs
     - Docker
     - Kubernetes
     - Azure
     - AWS
     - CI/CD
-    - GitHub Actions
-    - GitLab CI/CD
     - Terraform
     - SQL
   medium_priority:
@@ -97,10 +90,26 @@ skills:
     - Automated testing
     - TDD
     - SOLID
-    - Power BI
     - Monitoring
     - Infrastructure as Code
-    - System design
+
+salary_preferences:
+  gb: {currency: GBP, preferred_min: 25000}
+  de: {currency: EUR, preferred_min: 40000}
+  nl: {currency: EUR, preferred_min: 38000}
+  ie: {currency: EUR, preferred_min: 38000}
+
+eligibility:
+  rules_path: config/eligibility_rules.yaml
+  registry_cache_ttl_hours: 168
+  uk_register_url: https://www.gov.uk/government/publications/register-of-licensed-sponsors-workers
+  nl_register_url: https://ind.nl/en/public-register-recognised-sponsors/public-register-work
+
+google_sheets:
+  enabled: true
+  tracker_worksheet: Jobs Tracker
+  state_worksheet: Bot State
+  email_log_worksheet: Email Log
 
 queries:
   - junior software engineer
