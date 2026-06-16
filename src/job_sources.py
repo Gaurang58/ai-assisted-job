@@ -13,6 +13,7 @@ from src.providers import (
     JobicyProvider,
     ReedProvider,
     RssProvider,
+    SerpApiProvider,
 )
 from src.providers.adzuna import normalize_adzuna_job
 from src.providers.reed import normalize_reed_job
@@ -25,6 +26,7 @@ DEFAULT_PROVIDERS = (
     RssProvider,
     ArbeitnowProvider,
     JobicyProvider,
+    SerpApiProvider,
 )
 
 

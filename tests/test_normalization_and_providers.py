@@ -3,6 +3,7 @@ from src.providers.adzuna import AdzunaProvider, normalize_adzuna_job
 from src.providers.arbeitnow import normalize_arbeitnow_job
 from src.providers.jobicy import JobicyProvider, normalize_jobicy_job
 from src.providers.rss import normalize_rss_job
+from src.providers.serpapi import SerpApiProvider, normalize_serpapi_job
 
 
 def test_adzuna_normalisation_by_country():
@@ -116,6 +117,57 @@ def test_jobicy_queries_ireland_first(config):
         "netherlands",
         "germany",
     ]
+
+
+def test_serpapi_prefers_direct_apply_link_and_maps_country():
+    job = normalize_serpapi_job(
+        {
+            "job_id": "abc",
+            "title": "Backend Engineer",
+            "company_name": "Search Co",
+            "location": "Dublin, Ireland",
+            "description": "<p>Build Node.js APIs</p>",
+            "share_link": "https://google.example/jobs/abc",
+            "apply_options": [
+                {"title": "Company", "link": "https://company.example/jobs/abc"}
+            ],
+            "detected_extensions": {"work_from_home": True},
+        },
+        "ie",
+        "backend engineer",
+    )
+    assert job.source == "serpapi"
+    assert job.country_code == "ie"
+    assert job.city == "Dublin"
+    assert job.url == "https://company.example/jobs/abc"
+    assert job.remote_type == "remote_country_restricted"
+
+
+class SerpApiResponse:
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return {"jobs_results": []}
+
+
+class SerpApiSession:
+    def __init__(self):
+        self.calls = []
+
+    def get(self, url, **kwargs):
+        self.calls.append((url, kwargs["params"]))
+        return SerpApiResponse()
+
+
+def test_serpapi_queries_configured_google_jobs_countries(config, monkeypatch):
+    monkeypatch.setenv("SERPAPI_API_KEY", "key")
+    config.data["queries"] = ["backend engineer"]
+    config.data["providers"]["serpapi"]["request_delay_seconds"] = 0
+    session = SerpApiSession()
+    SerpApiProvider(session).fetch(config)
+    assert {params["engine"] for _, params in session.calls} == {"google_jobs"}
+    assert {params["gl"] for _, params in session.calls} == {"uk", "de", "nl", "ie"}
 
 
 class FakeResponse:

@@ -39,6 +39,16 @@ providers:
     industries: [engineering, dev]
     results_per_request: 100
     excluded_levels: [senior, director, executive]
+  serpapi:
+    enabled: true
+    countries: [gb, de, nl, ie]
+    locations:
+      gb: United Kingdom
+      de: Germany
+      nl: Netherlands
+      ie: Ireland
+    hl: en
+    request_delay_seconds: 0.2
 
 roles:
   canonical:
