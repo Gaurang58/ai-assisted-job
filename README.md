@@ -21,8 +21,9 @@ merged before the new four-country behavior becomes the daily scheduled version.
 ## Architecture
 
 - `src/providers/`: Adzuna (`gb`, `de`, `nl`), Reed (`gb` only), RSS,
-  Arbeitnow and Jobicy country-filtered remote-job adapters. Jobicy supplies
-  additional Ireland, Netherlands and Germany coverage without a new secret.
+  Arbeitnow, Jobicy country-filtered remote-job adapters and optional SerpApi
+  Google Jobs coverage. Jobicy supplies additional Ireland, Netherlands and
+  Germany coverage without a new secret.
 - `src/normalization.py`: country, city, remote and local-salary normalization.
 - `src/eligibility/`: one evidence checker per Phase One country.
 - `src/scoring.py` and `src/dedupe.py`: configurable relevance scoring and two-stage deduplication.
@@ -65,6 +66,7 @@ The generated local report is `exports/latest_report.html`.
 
 - `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`
 - `REED_API_KEY` (optional)
+- `SERPAPI_API_KEY` (optional; enables SerpApi Google Jobs)
 - `EMAIL_USER`, `EMAIL_PASS`, `EMAIL_RECIPIENT`
 - `SMTP_HOST`, `SMTP_PORT` (optional; Gmail defaults are used)
 - `GOOGLE_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`

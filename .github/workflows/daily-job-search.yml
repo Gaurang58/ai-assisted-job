@@ -34,6 +34,7 @@ jobs:
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
           REED_API_KEY: ${{ secrets.REED_API_KEY }}
+          SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}

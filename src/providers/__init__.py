@@ -3,6 +3,7 @@ from .arbeitnow import ArbeitnowProvider
 from .jobicy import JobicyProvider
 from .reed import ReedProvider
 from .rss import RssProvider
+from .serpapi import SerpApiProvider
 
 __all__ = [
     "AdzunaProvider",
@@ -10,4 +11,5 @@ __all__ = [
     "JobicyProvider",
     "ReedProvider",
     "RssProvider",
+    "SerpApiProvider",
 ]
